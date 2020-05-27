@@ -18,4 +18,4 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('get-shipping-rate','API\Fedex@getShippingrate');
+Route::post('get-shipping-rate','API\FedexController@getShippingrate');
