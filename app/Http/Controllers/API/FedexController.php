@@ -3,20 +3,21 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use FedEx\RateService\Request;
+use FedEx\RateService\Request as FedExRequest;
 use FedEx\RateService\ComplexType;
 use FedEx\RateService\SimpleType;
-//use Illuminate\Http\Request;
+use Illuminate\Http\Request;
 require_once 'credentials.php';
 
 class FedexController extends Controller
 {
     
-    public function getShippingrate(Request $request)
+    public function getShippingrate(Request $request,FedExRequest $fedexrequest)
     {
 
         $rateRequest = new ComplexType\RateRequest();
 
+        $sameCOuntry = true;
         //authentication & client details
         $rateRequest->WebAuthenticationDetail->UserCredential->Key = FEDEX_KEY;
         $rateRequest->WebAuthenticationDetail->UserCredential->Password = FEDEX_PASSWORD;
@@ -42,11 +43,11 @@ class FedexController extends Controller
         $rateRequest->RequestedShipment->Shipper->Address->CountryCode = 'US';
 
         //recipient
-        $rateRequest->RequestedShipment->Recipient->Address->StreetLines = ['23/5 Industrial colony C. B. Ganj'];
-        $rateRequest->RequestedShipment->Recipient->Address->City = 'Bareilly';
-        $rateRequest->RequestedShipment->Recipient->Address->StateOrProvinceCode = 'UP';
-        $rateRequest->RequestedShipment->Recipient->Address->PostalCode = 243502;
-        $rateRequest->RequestedShipment->Recipient->Address->CountryCode = 'IN';
+        $rateRequest->RequestedShipment->Recipient->Address->StreetLines = ['13450 Farmcrest Ct'];
+        $rateRequest->RequestedShipment->Recipient->Address->City = 'Herndon';
+        $rateRequest->RequestedShipment->Recipient->Address->StateOrProvinceCode = 'VA';
+        $rateRequest->RequestedShipment->Recipient->Address->PostalCode = 20171;
+        $rateRequest->RequestedShipment->Recipient->Address->CountryCode = 'US';
 
         //shipping charges payment
         $rateRequest->RequestedShipment->ShippingChargesPayment->PaymentType = SimpleType\PaymentType::_SENDER;
@@ -79,14 +80,12 @@ class FedexController extends Controller
         // $rateRequest->RequestedShipment->RequestedPackageLineItems[1]->Dimensions->Units = SimpleType\LinearUnits::_IN;
         // $rateRequest->RequestedShipment->RequestedPackageLineItems[1]->GroupPackageCount = 1;
 
-        $rateServiceRequest = new Request();
+        $rateServiceRequest = new FedExRequest();
         //$rateServiceRequest->getSoapClient()->__setLocation(Request::PRODUCTION_URL); //use production URL
 
         $rateReply = $rateServiceRequest->getGetRatesReply($rateRequest); // send true as the 2nd argument to return the SoapClient's stdClass response.
 
-       echo '<pre>';
-       print_r($rateReply);
-       die;
+   
 
         // if (!empty($rateReply->RateReplyDetails)) {
         //     foreach ($rateReply->RateReplyDetails as $rateReplyDetail) {
@@ -99,7 +98,7 @@ class FedexController extends Controller
         //         echo "<hr />";
         //     }
         // }
-        
+        // die;
    
 
         
@@ -108,21 +107,44 @@ class FedexController extends Controller
         if (!empty($rateReply->RateReplyDetails)) {
             foreach ($rateReply->RateReplyDetails as $rateReplyDetail) {
                 //var_dump($rateReplyDetail->ServiceType);
-                if($rateReplyDetail->ServiceType === 'FEDEX_GROUND'){
+
+
+                if($sameCOuntry){
+                    //FEDEX_GROUND
                    
-                    if (!empty($rateReplyDetail->RatedShipmentDetails)) {
-                        
-                        foreach ($rateReplyDetail->RatedShipmentDetails as $ratedShipmentDetail) {
-                            if($ratedShipmentDetail->ShipmentRateDetail->RateType === 'PAYOR_ACCOUNT_PACKAGE'){
-                                
-                                // die($ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount); 
-                                $FEDEX_GROUND_DELIVERY_RATE = $ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount;
-                               
+                    if($rateReplyDetail->ServiceType === 'FEDEX_EXPRESS_SAVER'){
+                      
+                        if (!empty($rateReplyDetail->RatedShipmentDetails)) {
+                            
+                            foreach ($rateReplyDetail->RatedShipmentDetails as $ratedShipmentDetail) {
+                                if($ratedShipmentDetail->ShipmentRateDetail->RateType === 'PAYOR_ACCOUNT_PACKAGE'){
+                                    
+                                    // die($ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount); 
+                                    $FEDEX_GROUND_DELIVERY_RATE = $ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount;
+                                   
+                                }
+                               // var_dump($ratedShipmentDetail->ShipmentRateDetail->RateType . ": " . $ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount);
                             }
-                           // var_dump($ratedShipmentDetail->ShipmentRateDetail->RateType . ": " . $ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount);
+                        }
+                    }
+                }else{
+                    if($rateReplyDetail->ServiceType === 'INTERNATIONAL_ECONOMY'){
+                        if (!empty($rateReplyDetail->RatedShipmentDetails)) {
+                            
+                            foreach ($rateReplyDetail->RatedShipmentDetails as $ratedShipmentDetail) {
+                                if($ratedShipmentDetail->ShipmentRateDetail->RateType === 'PAYOR_ACCOUNT_SHIPMENT'){
+                                 
+                                    // die($ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount); 
+                                    $FEDEX_GROUND_DELIVERY_RATE = $ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount;
+                                    
+                                   
+                                }
+                               // var_dump($ratedShipmentDetail->ShipmentRateDetail->RateType . ": " . $ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount);
+                            }
                         }
                     }
                 }
+                
                
                // echo "<hr />";
             }
