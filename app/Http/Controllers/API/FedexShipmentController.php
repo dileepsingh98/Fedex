@@ -36,28 +36,28 @@ class FedexShipmentController extends Controller
 
         $shipperAddress = new ComplexType\Address();
         $shipperAddress
-            ->setStreetLines(['Address Line 1'])
-            ->setCity('Austin')
-            ->setStateOrProvinceCode('TX')
-            ->setPostalCode('73301')
+            ->setStreetLines(['10 Fed Ex Pkwy'])
+            ->setCity('Memphis')
+            ->setStateOrProvinceCode('TN')
+            ->setPostalCode('38115')
             ->setCountryCode('US');
 
         $shipperContact = new ComplexType\Contact();
         $shipperContact
-            ->setCompanyName('Company Name')
+            ->setCompanyName('XYZ Pvt Ltd')
             ->setEMailAddress('test@example.com')
-            ->setPersonName('Person Name')
+            ->setPersonName('Sourabh')
             ->setPhoneNumber(('123-123-1234'));
 
         $shipper = new ComplexType\Party();
         $shipper
-            ->setAccountNumber('510087780')
+            ->setAccountNumber(FEDEX_ACCOUNT_NUMBER)
             ->setAddress($shipperAddress)
             ->setContact($shipperContact);
 
         $recipientAddress = new ComplexType\Address();
         $recipientAddress
-            ->setStreetLines(['Address Line 1'])
+            ->setStreetLines(['13450 Farmcrest Ct'])
             ->setCity('Herndon')
             ->setStateOrProvinceCode('VA')
             ->setPostalCode('20171')
@@ -65,7 +65,7 @@ class FedexShipmentController extends Controller
 
         $recipientContact = new ComplexType\Contact();
         $recipientContact
-            ->setPersonName('Contact Name')
+            ->setPersonName('Sazid')
             ->setPhoneNumber('1234567890');
 
         $recipient = new ComplexType\Party();
