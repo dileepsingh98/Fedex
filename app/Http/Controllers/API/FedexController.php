@@ -201,9 +201,9 @@ class FedexController extends Controller
             }
         }
        // echo $FEDEX_GROUND_DELIVERY_RATE;
-       echo '<pre>';
-       print_r($rateReply);
-       die;
+    //    echo '<pre>';
+    //    print_r($rateReply);
+    //    die;
         return response()->json(['data'=>$FEDEX_GROUND_DELIVERY_RATE,'error'=>'']);
         
     }
