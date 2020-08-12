@@ -131,7 +131,25 @@ class FedexController extends Controller
         // }
         // die;
 
+        if(!empty($rateReply->Notifications)){
+            $isError = false;
+            $errMessage = '';
+            foreach($rateReply->Notifications as $notification){
+              
+                if((int)$notification->Code === 556){
+                    $errMessage .= $notification->Message;
+                    $isError = true;
+                    
+                }
+            }
+           
+            if($isError === true){
 
+                return response()->json(['data'=>[],'error'=>$errMessage]);
+                die('test');
+            }
+
+        }
    
 
         
@@ -182,11 +200,11 @@ class FedexController extends Controller
                // echo "<hr />";
             }
         }
-    //     echo $FEDEX_GROUND_DELIVERY_RATE;
-    //    echo '<pre>';
-    //    print_r($rateReply);
-    //    die;
-        return response()->json(['data'=>$FEDEX_GROUND_DELIVERY_RATE]);
+       // echo $FEDEX_GROUND_DELIVERY_RATE;
+       echo '<pre>';
+       print_r($rateReply);
+       die;
+        return response()->json(['data'=>$FEDEX_GROUND_DELIVERY_RATE,'error'=>'']);
         
     }
 
