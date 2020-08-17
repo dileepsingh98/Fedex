@@ -12,8 +12,19 @@ require_once 'credentials.php';
 
 class FedexShipmentController extends Controller
 {
-    public function getShipment()
+    public function generateShipment(Request $request)
     {
+
+      
+        $shipper_address = $request->input('shipper_address');
+        $recipient_address = $request->input('recipient_address');
+        $products_detail =  $request->input('products_detail');
+        $shipperContactDetail =  $request->input('shipperContact');
+        $recipientContactDetail =  $request->input('recipientContact');
+        $ServiceType = $request->input('ServiceType');
+        $totalPackages = count($products_detail);
+
+        
         $userCredential = new ComplexType\WebAuthenticationCredential();
         $userCredential
             ->setKey(FEDEX_KEY)
@@ -36,18 +47,18 @@ class FedexShipmentController extends Controller
 
         $shipperAddress = new ComplexType\Address();
         $shipperAddress
-            ->setStreetLines(['10 Fed Ex Pkwy'])
-            ->setCity('Memphis')
-            ->setStateOrProvinceCode('TN')
-            ->setPostalCode('38115')
-            ->setCountryCode('US');
+            ->setStreetLines([$shipper_address['street']])
+            ->setCity($shipper_address['city'])
+            ->setStateOrProvinceCode($shipper_address['state_code'])
+            ->setPostalCode($shipper_address['postal_code'])
+            ->setCountryCode($shipper_address['country_code']);
 
         $shipperContact = new ComplexType\Contact();
         $shipperContact
-            ->setCompanyName('XYZ Pvt Ltd')
-            ->setEMailAddress('test@example.com')
-            ->setPersonName('Sourabh')
-            ->setPhoneNumber(('123-123-1234'));
+            ->setCompanyName($shipperContactDetail['company_name'])
+            ->setEMailAddress($shipperContactDetail['company_email'])
+            ->setPersonName($shipperContactDetail['person_name'])
+            ->setPhoneNumber(($shipperContactDetail['person_mobile_no']));
 
         $shipper = new ComplexType\Party();
         $shipper
@@ -57,16 +68,16 @@ class FedexShipmentController extends Controller
 
         $recipientAddress = new ComplexType\Address();
         $recipientAddress
-            ->setStreetLines(['13450 Farmcrest Ct'])
-            ->setCity('Herndon')
-            ->setStateOrProvinceCode('VA')
-            ->setPostalCode('20171')
-            ->setCountryCode('US');
+            ->setStreetLines([$recipient_address['street']])
+            ->setCity($recipient_address['city'])
+            ->setStateOrProvinceCode($recipient_address['state_code'])
+            ->setPostalCode($recipient_address['postal_code'])
+            ->setCountryCode($recipient_address['country_code']);
 
         $recipientContact = new ComplexType\Contact();
         $recipientContact
-            ->setPersonName('Sazid')
-            ->setPhoneNumber('1234567890');
+            ->setPersonName($recipientContactDetail['person_name'])
+            ->setPhoneNumber($recipientContactDetail['contact_name']);
 
         $recipient = new ComplexType\Party();
         $recipient
@@ -79,20 +90,50 @@ class FedexShipmentController extends Controller
             ->setImageType(new SimpleType\ShippingDocumentImageType(SimpleType\ShippingDocumentImageType::_PDF))
             ->setLabelFormatType(new SimpleType\LabelFormatType(SimpleType\LabelFormatType::_COMMON2D));
 
-        $packageLineItem1 = new ComplexType\RequestedPackageLineItem();
-        $packageLineItem1
-            ->setSequenceNumber(1)
-            ->setItemDescription('Product description')
-            ->setDimensions(new ComplexType\Dimensions(array(
-                'Width' => 10,
-                'Height' => 10,
-                'Length' => 25,
-                'Units' => SimpleType\LinearUnits::_IN
-            )))
-            ->setWeight(new ComplexType\Weight(array(
-                'Value' => 2,
-                'Units' => SimpleType\WeightUnits::_LB
-            )));
+
+        $requestedPackageLineItems = [];
+        if($totalPackages){
+            if(!empty($products_detail)){
+                foreach($products_detail as $key => $val){
+                    $count = $key + 1;
+                    
+                    $packageLineItem = $count.'packageLineItem';
+                    $packageLineItem = new ComplexType\RequestedPackageLineItem();
+                    $packageLineItem->setSequenceNumber($count)
+                                        ->setItemDescription($val['description'])
+                                        ->setDimensions(new ComplexType\Dimensions(array(
+                                            'Width' => $val['width'],
+                                            'Height' => $val['height'],
+                                            'Length' => $val['length'],
+                                            'Units' => SimpleType\LinearUnits::_IN
+                                        )))
+                                        ->setWeight(new ComplexType\Weight(array(
+                                            'Value' => $val['weight'],
+                                            'Units' => SimpleType\WeightUnits::_LB
+                                        )));
+                    $requestedPackageLineItems[] = $packageLineItem;
+                }
+            }
+
+
+
+           
+        }
+       
+        // $packageLineItem1 = new ComplexType\RequestedPackageLineItem();
+        // $packageLineItem1
+        //     ->setSequenceNumber(1)
+        //     ->setItemDescription('Product description')
+        //     ->setDimensions(new ComplexType\Dimensions(array(
+        //         'Width' => 10,
+        //         'Height' => 10,
+        //         'Length' => 25,
+        //         'Units' => SimpleType\LinearUnits::_IN
+        //     )))
+        //     ->setWeight(new ComplexType\Weight(array(
+        //         'Value' => 2,
+        //         'Units' => SimpleType\WeightUnits::_LB
+        //     )));
 
         $shippingChargesPayor = new ComplexType\Payor();
         $shippingChargesPayor->setResponsibleParty($shipper);
@@ -102,19 +143,24 @@ class FedexShipmentController extends Controller
             ->setPaymentType(SimpleType\PaymentType::_SENDER)
             ->setPayor($shippingChargesPayor);
 
+
+            
         $requestedShipment = new ComplexType\RequestedShipment();
         $requestedShipment->setShipTimestamp(date('c'));
         $requestedShipment->setDropoffType(new SimpleType\DropoffType(SimpleType\DropoffType::_REGULAR_PICKUP));
-        $requestedShipment->setServiceType(new SimpleType\ServiceType(SimpleType\ServiceType::_FEDEX_GROUND));
+        $requestedShipment->setServiceType(new SimpleType\ServiceType($ServiceType));
         $requestedShipment->setPackagingType(new SimpleType\PackagingType(SimpleType\PackagingType::_YOUR_PACKAGING));
         $requestedShipment->setShipper($shipper);
         $requestedShipment->setRecipient($recipient);
         $requestedShipment->setLabelSpecification($labelSpecification);
         $requestedShipment->setRateRequestTypes(array(new SimpleType\RateRequestType(SimpleType\RateRequestType::_PREFERRED)));
-        $requestedShipment->setPackageCount(1);
-        $requestedShipment->setRequestedPackageLineItems([
-            $packageLineItem1
-        ]);
+        //$requestedShipment->setPackageCount(1);
+        $requestedShipment->setPackageCount($totalPackages);
+        // $requestedShipment->setRequestedPackageLineItems([
+        //     $packageLineItem1
+        // ]);
+
+        $requestedShipment->setRequestedPackageLineItems($requestedPackageLineItems);
         $requestedShipment->setShippingChargesPayment($shippingChargesPayment);
 
         $processShipmentRequest = new ComplexType\ProcessShipmentRequest();
@@ -130,9 +176,13 @@ class FedexShipmentController extends Controller
         // var_dump($result);
         // Save .pdf label
 
-        $labelName = public_path().'/label/'.rand(10,1000).'_label.pdf';
+        $fileName = rand(10,1000).'_'.time().'_label.pdf';
+        $labelName = public_path().'/label/'.$fileName;
         file_put_contents($labelName, $result->CompletedShipmentDetail->CompletedPackageDetails[0]->Label->Parts[0]->Image);
+        
+        $labelUrl = 'http://ec2-3-87-57-22.compute-1.amazonaws.com/Fedex/public/label/'.$fileName;
        // echo $result->CompletedShipmentDetail->CompletedPackageDetails[0]->Label->Parts[0]->Image;
-       die($labelName);
+        
+       return response()->json(['data'=>['label'=>$labelUrl,'TrackingNumber'=>$result->CompletedShipmentDetail->MasterTrackingId->TrackingNumber],'error'=>'']);
     }
 }

@@ -21,6 +21,7 @@ class FedexController extends Controller
         $products_detail =  $request->input('products_detail');
         $totalPackages = count($products_detail);
         
+       // return response()->json(['shippig'=>$shipper_address,'recipe'=>$recipient_address]);die;
         
 
 
