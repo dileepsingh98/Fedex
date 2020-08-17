@@ -173,16 +173,27 @@ class FedexShipmentController extends Controller
         //$shipService->getSoapClient()->__setLocation('https://ws.fedex.com:443/web-services/ship');
         $result = $shipService->getProcessShipmentReply($processShipmentRequest);
 
+       
+        $error = '';
+        $labelUrl = '';
+        $trackingId = '';
+        if($result->Notifications[0]->Code == 3017 || $result->Notifications[0]->Code == 3021){
+            $error = $result->Notifications[0]->Message;
+           
+        }else{
+
+            $fileName = rand(10,1000).'_'.time().'_label.pdf';
+            $labelName = public_path().'/label/'.$fileName;
+           
+            file_put_contents($labelName, $result->CompletedShipmentDetail->CompletedPackageDetails[0]->Label->Parts[0]->Image);
+            
+            $labelUrl = 'http://ec2-3-87-57-22.compute-1.amazonaws.com/Fedex/public/label/'.$fileName;
+            $trackingId = $result->CompletedShipmentDetail->MasterTrackingId->TrackingNumber;
+        }
         // var_dump($result);
         // Save .pdf label
-
-        $fileName = rand(10,1000).'_'.time().'_label.pdf';
-        $labelName = public_path().'/label/'.$fileName;
-        file_put_contents($labelName, $result->CompletedShipmentDetail->CompletedPackageDetails[0]->Label->Parts[0]->Image);
-        
-        $labelUrl = 'http://ec2-3-87-57-22.compute-1.amazonaws.com/Fedex/public/label/'.$fileName;
        // echo $result->CompletedShipmentDetail->CompletedPackageDetails[0]->Label->Parts[0]->Image;
         
-       return response()->json(['data'=>['label'=>$labelUrl,'TrackingNumber'=>$result->CompletedShipmentDetail->MasterTrackingId->TrackingNumber],'error'=>'']);
+       return response()->json(['data'=>['label'=>$labelUrl,'TrackingNumber'=>$trackingId],'error'=>$error]);
     }
 }
