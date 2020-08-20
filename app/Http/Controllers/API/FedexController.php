@@ -15,7 +15,7 @@ class FedexController extends Controller
     public function getShippingrate(Request $request,FedExRequest $fedexrequest)
     {
 
-        $sameCOuntry = ($request->input('is_domestic_shipping'))?$request->input('is_domestic_shipping'):true;
+        $sameCountry = $request->input('is_domestic_shipping');
         $shipper_address = $request->input('shipper_address');
         $recipient_address = $request->input('recipient_address');
         $products_detail =  $request->input('products_detail');
@@ -117,7 +117,7 @@ class FedexController extends Controller
         $rateReply = $rateServiceRequest->getGetRatesReply($rateRequest); // send true as the 2nd argument to return the SoapClient's stdClass response.
 
    
-
+      
         // if (!empty($rateReply->RateReplyDetails)) {
         //     foreach ($rateReply->RateReplyDetails as $rateReplyDetail) {
         //         var_dump($rateReplyDetail->ServiceType);
@@ -164,11 +164,11 @@ class FedexController extends Controller
                 //var_dump($rateReplyDetail->ServiceType);
 
 
-                if($sameCOuntry){
+                if($sameCountry === true){
                     //FEDEX_GROUND
                    
                     //if($rateReplyDetail->ServiceType === 'FEDEX_EXPRESS_SAVER'){
-                      
+                       
                         if (!empty($rateReplyDetail->RatedShipmentDetails)) {
                             
                             foreach ($rateReplyDetail->RatedShipmentDetails as $ratedShipmentDetail) {
