@@ -177,7 +177,8 @@ class FedexShipmentController extends Controller
         $error = '';
         $labelUrl = '';
         $trackingId = '';
-        if($result->Notifications[0]->Code == 3017 || $result->Notifications[0]->Code == 3021){
+       
+        if($result->Notifications[0]->Code == 3017 || $result->Notifications[0]->Code == 3021 || $result->Notifications[0]->Code == 6541){
             $error = $result->Notifications[0]->Message;
            
         }else{
