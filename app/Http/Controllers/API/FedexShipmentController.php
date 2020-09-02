@@ -177,8 +177,10 @@ class FedexShipmentController extends Controller
         $error = '';
         $labelUrl = '';
         $trackingId = '';
-     
-        if($result->Notifications[0]->Code == 3017 || $result->Notifications[0]->Code == 3021 || $result->Notifications[0]->Code == 6541|| $result->Notifications[0]->Code == 1000){
+        // echo '<pre>';
+        // print_r($result);
+        // die;
+        if($result->Notifications[0]->Severity == 'ERROR' || $result->Notifications[0]->Severity == 'FAILURE' || $result->Notifications[0]->Code == 3017 || $result->Notifications[0]->Code == 3021 || $result->Notifications[0]->Code == 6541|| $result->Notifications[0]->Code == 1000 || $result->Notifications[0]->Code == 8336){
             // $error = $result->Notifications[0]->Message;
             $error = 'FedEx Service Api encounter some error';
            
