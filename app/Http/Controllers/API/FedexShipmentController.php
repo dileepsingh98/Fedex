@@ -91,113 +91,204 @@ class FedexShipmentController extends Controller
             ->setLabelFormatType(new SimpleType\LabelFormatType(SimpleType\LabelFormatType::_COMMON2D));
 
 
-        $requestedPackageLineItems = [];
-        if($totalPackages){
-            if(!empty($products_detail)){
-                foreach($products_detail as $key => $val){
-                    $count = $key + 1;
-                    
-                    $packageLineItem = $count.'packageLineItem';
-                    $packageLineItem = new ComplexType\RequestedPackageLineItem();
-                    $packageLineItem->setSequenceNumber($count)
-                                        ->setItemDescription($val['description'])
-                                        ->setDimensions(new ComplexType\Dimensions(array(
-                                            'Width' => $val['width'],
-                                            'Height' => $val['height'],
-                                            'Length' => $val['length'],
-                                            'Units' => SimpleType\LinearUnits::_IN
-                                        )))
-                                        ->setWeight(new ComplexType\Weight(array(
-                                            'Value' => $val['weight'],
-                                            'Units' => SimpleType\WeightUnits::_LB
-                                        )));
-                    $requestedPackageLineItems[] = $packageLineItem;
-                }
-            }
-
-
-
-           
-        }
-       
-        // $packageLineItem1 = new ComplexType\RequestedPackageLineItem();
-        // $packageLineItem1
-        //     ->setSequenceNumber(1)
-        //     ->setItemDescription('Product description')
-        //     ->setDimensions(new ComplexType\Dimensions(array(
-        //         'Width' => 10,
-        //         'Height' => 10,
-        //         'Length' => 25,
-        //         'Units' => SimpleType\LinearUnits::_IN
-        //     )))
-        //     ->setWeight(new ComplexType\Weight(array(
-        //         'Value' => 2,
-        //         'Units' => SimpleType\WeightUnits::_LB
-        //     )));
-
-        $shippingChargesPayor = new ComplexType\Payor();
-        $shippingChargesPayor->setResponsibleParty($shipper);
-
-        $shippingChargesPayment = new ComplexType\Payment();
-        $shippingChargesPayment
-            ->setPaymentType(SimpleType\PaymentType::_SENDER)
-            ->setPayor($shippingChargesPayor);
-
-
-            
-        $requestedShipment = new ComplexType\RequestedShipment();
-        $requestedShipment->setShipTimestamp(date('c'));
-        $requestedShipment->setDropoffType(new SimpleType\DropoffType(SimpleType\DropoffType::_REGULAR_PICKUP));
-        $requestedShipment->setServiceType(new SimpleType\ServiceType($ServiceType));
-        $requestedShipment->setPackagingType(new SimpleType\PackagingType(SimpleType\PackagingType::_YOUR_PACKAGING));
-        $requestedShipment->setShipper($shipper);
-        $requestedShipment->setRecipient($recipient);
-        $requestedShipment->setLabelSpecification($labelSpecification);
-        $requestedShipment->setRateRequestTypes(array(new SimpleType\RateRequestType(SimpleType\RateRequestType::_PREFERRED)));
-        //$requestedShipment->setPackageCount(1);
-        $requestedShipment->setPackageCount($totalPackages);
-        // $requestedShipment->setRequestedPackageLineItems([
-        //     $packageLineItem1
-        // ]);
-
-        $requestedShipment->setRequestedPackageLineItems($requestedPackageLineItems);
-        $requestedShipment->setShippingChargesPayment($shippingChargesPayment);
-
-        $processShipmentRequest = new ComplexType\ProcessShipmentRequest();
-        $processShipmentRequest->setWebAuthenticationDetail($webAuthenticationDetail);
-        $processShipmentRequest->setClientDetail($clientDetail);
-        $processShipmentRequest->setVersion($version);
-        $processShipmentRequest->setRequestedShipment($requestedShipment);
-
-        $shipService = new ShipService\Request();
-        //$shipService->getSoapClient()->__setLocation('https://ws.fedex.com:443/web-services/ship');
-        $result = $shipService->getProcessShipmentReply($processShipmentRequest);
-
-       
+        $shippingDetailList = [];
         $error = '';
-        $labelUrl = '';
-        $trackingId = '';
-        // echo '<pre>';
-        // print_r($result);
-        // die;
-        if($result->Notifications[0]->Severity == 'ERROR' || $result->Notifications[0]->Severity == 'FAILURE' || $result->Notifications[0]->Code == 3017 || $result->Notifications[0]->Code == 3021 || $result->Notifications[0]->Code == 6541|| $result->Notifications[0]->Code == 1000 || $result->Notifications[0]->Code == 8336){
-            // $error = $result->Notifications[0]->Message;
-            $error = 'FedEx Service Api encounter some error';
-           
-        }else{
+        if(!empty($products_detail)){
+            foreach($products_detail as $key => $val){
+            $packageLineItem1 = new ComplexType\RequestedPackageLineItem();
+            $packageLineItem1
+                ->setSequenceNumber(1)
+                ->setItemDescription($val['description'])
+                ->setDimensions(new ComplexType\Dimensions(array(
+                    'Width' => $val['width'],
+                    'Height' => $val['height'],
+                    'Length' => $val['length'],
+                    'Units' => SimpleType\LinearUnits::_IN
+                )))
+                ->setWeight(new ComplexType\Weight(array(
+                    'Value' => $val['weight'],
+                    'Units' => SimpleType\WeightUnits::_LB
+                )));
 
-            $fileName = rand(10,1000).'_'.time().'_label.pdf';
-            $labelName = public_path().'/label/'.$fileName;
-           
-            file_put_contents($labelName, $result->CompletedShipmentDetail->CompletedPackageDetails[0]->Label->Parts[0]->Image);
-            
-            $labelUrl = 'http://ec2-3-87-57-22.compute-1.amazonaws.com/Fedex/public/label/'.$fileName;
-            $trackingId = $result->CompletedShipmentDetail->MasterTrackingId->TrackingNumber;
-        }
-        // var_dump($result);
-        // Save .pdf label
-       // echo $result->CompletedShipmentDetail->CompletedPackageDetails[0]->Label->Parts[0]->Image;
+                $shippingChargesPayor = new ComplexType\Payor();
+                $shippingChargesPayor->setResponsibleParty($shipper);
         
-       return response()->json(['data'=>['label'=>$labelUrl,'TrackingNumber'=>$trackingId],'error'=>$error]);
+                $shippingChargesPayment = new ComplexType\Payment();
+                $shippingChargesPayment
+                    ->setPaymentType(SimpleType\PaymentType::_SENDER)
+                    ->setPayor($shippingChargesPayor);
+        
+        
+                    
+                $requestedShipment = new ComplexType\RequestedShipment();
+                $requestedShipment->setShipTimestamp(date('c'));
+                $requestedShipment->setDropoffType(new SimpleType\DropoffType(SimpleType\DropoffType::_REGULAR_PICKUP));
+                $requestedShipment->setServiceType(new SimpleType\ServiceType($ServiceType));
+                $requestedShipment->setPackagingType(new SimpleType\PackagingType(SimpleType\PackagingType::_YOUR_PACKAGING));
+                $requestedShipment->setShipper($shipper);
+                $requestedShipment->setRecipient($recipient);
+                $requestedShipment->setLabelSpecification($labelSpecification);
+                $requestedShipment->setRateRequestTypes(array(new SimpleType\RateRequestType(SimpleType\RateRequestType::_PREFERRED)));
+                //$requestedShipment->setPackageCount(1);
+               
+                $requestedShipment->setPackageCount($totalPackages);
+               
+                $requestedShipment->setRequestedPackageLineItems([
+                    $packageLineItem1
+                ]);
+                $requestedShipment->setShippingChargesPayment($shippingChargesPayment);
+        
+                $processShipmentRequest = new ComplexType\ProcessShipmentRequest();
+                $processShipmentRequest->setWebAuthenticationDetail($webAuthenticationDetail);
+                $processShipmentRequest->setClientDetail($clientDetail);
+                $processShipmentRequest->setVersion($version);
+                $processShipmentRequest->setRequestedShipment($requestedShipment);
+        
+                $shipService = new ShipService\Request();
+                //$shipService->getSoapClient()->__setLocation('https://ws.fedex.com:443/web-services/ship');
+                $result = $shipService->getProcessShipmentReply($processShipmentRequest);
+
+                $error = '';
+                $labelUrl = '';
+                $trackingId = '';
+              
+
+                
+                if($result->Notifications[0]->Code != 0000){
+                    //if($result->Notifications[0]->Severity == 'ERROR' || $result->Notifications[0]->Severity == 'FAILURE' || $result->Notifications[0]->Code == 3017 || $result->Notifications[0]->Code == 3021 || $result->Notifications[0]->Code == 6541|| $result->Notifications[0]->Code == 1000 || $result->Notifications[0]->Code == 8336){
+                    // $error = $result->Notifications[0]->Message;
+                    $error = 'FedEx Service Api encounter some error';
+
+                }else{
+
+                    $fileName = rand(10,1000).'_'.time().'_label.pdf';
+                    $labelName = public_path().'/label/'.$fileName;
+                
+                    file_put_contents($labelName, $result->CompletedShipmentDetail->CompletedPackageDetails[0]->Label->Parts[0]->Image);
+                    
+                    $labelUrl = 'http://ec2-3-87-57-22.compute-1.amazonaws.com/Fedex/public/label/'.$fileName;
+                    $trackingId = $result->CompletedShipmentDetail->MasterTrackingId->TrackingNumber;
+                   
+                }
+                // var_dump($result);
+                // Save .pdf label
+            // echo $result->CompletedShipmentDetail->CompletedPackageDetails[0]->Label->Parts[0]->Image;
+            $shippingDetailList[] = ['label'=>$labelUrl,'TrackingNumber'=>$trackingId,'product_id'=>$val['id']];
+           
+            }
+        }
+        return response()->json(['data'=>$shippingDetailList,'error'=>$error]);
+       
+        /**************************ENd*************************/
+    //     $requestedPackageLineItems = [];
+    //     if($totalPackages){
+    //         if(!empty($products_detail)){
+                
+    //             foreach($products_detail as $key => $val){
+    //                 $count = $key + 1;
+                    
+    //                 $packageLineItem = $count.'packageLineItem';
+    //                 $packageLineItem = new ComplexType\RequestedPackageLineItem();
+    //                 $packageLineItem->setSequenceNumber($count)
+    //                                     ->setItemDescription($val['description'])
+    //                                     ->setDimensions(new ComplexType\Dimensions(array(
+    //                                         'Width' => $val['width'],
+    //                                         'Height' => $val['height'],
+    //                                         'Length' => $val['length'],
+    //                                         'Units' => SimpleType\LinearUnits::_IN
+    //                                     )))
+    //                                     ->setWeight(new ComplexType\Weight(array(
+    //                                         'Value' => $val['weight'],
+    //                                         'Units' => SimpleType\WeightUnits::_LB
+    //                                     )));
+    //                 $requestedPackageLineItems[] = $packageLineItem;
+    //             }
+    //         }
+
+
+
+           
+    //     }
+       
+    //     // $packageLineItem1 = new ComplexType\RequestedPackageLineItem();
+    //     // $packageLineItem1
+    //     //     ->setSequenceNumber(1)
+    //     //     ->setItemDescription('Product description')
+    //     //     ->setDimensions(new ComplexType\Dimensions(array(
+    //     //         'Width' => 10,
+    //     //         'Height' => 10,
+    //     //         'Length' => 25,
+    //     //         'Units' => SimpleType\LinearUnits::_IN
+    //     //     )))
+    //     //     ->setWeight(new ComplexType\Weight(array(
+    //     //         'Value' => 2,
+    //     //         'Units' => SimpleType\WeightUnits::_LB
+    //     //     )));
+
+    //     $shippingChargesPayor = new ComplexType\Payor();
+    //     $shippingChargesPayor->setResponsibleParty($shipper);
+
+    //     $shippingChargesPayment = new ComplexType\Payment();
+    //     $shippingChargesPayment
+    //         ->setPaymentType(SimpleType\PaymentType::_SENDER)
+    //         ->setPayor($shippingChargesPayor);
+
+
+            
+    //     $requestedShipment = new ComplexType\RequestedShipment();
+    //     $requestedShipment->setShipTimestamp(date('c'));
+    //     $requestedShipment->setDropoffType(new SimpleType\DropoffType(SimpleType\DropoffType::_REGULAR_PICKUP));
+    //     $requestedShipment->setServiceType(new SimpleType\ServiceType($ServiceType));
+    //     $requestedShipment->setPackagingType(new SimpleType\PackagingType(SimpleType\PackagingType::_YOUR_PACKAGING));
+    //     $requestedShipment->setShipper($shipper);
+    //     $requestedShipment->setRecipient($recipient);
+    //     $requestedShipment->setLabelSpecification($labelSpecification);
+    //     $requestedShipment->setRateRequestTypes(array(new SimpleType\RateRequestType(SimpleType\RateRequestType::_PREFERRED)));
+    //     //$requestedShipment->setPackageCount(1);
+       
+    //     $requestedShipment->setPackageCount($totalPackages);
+    //     // $requestedShipment->setRequestedPackageLineItems([
+    //     //     $packageLineItem1
+    //     // ]);
+
+    //     $requestedShipment->setRequestedPackageLineItems($requestedPackageLineItems);
+    //     $requestedShipment->setShippingChargesPayment($shippingChargesPayment);
+
+    //     $processShipmentRequest = new ComplexType\ProcessShipmentRequest();
+    //     $processShipmentRequest->setWebAuthenticationDetail($webAuthenticationDetail);
+    //     $processShipmentRequest->setClientDetail($clientDetail);
+    //     $processShipmentRequest->setVersion($version);
+    //     $processShipmentRequest->setRequestedShipment($requestedShipment);
+
+    //     $shipService = new ShipService\Request();
+    //     //$shipService->getSoapClient()->__setLocation('https://ws.fedex.com:443/web-services/ship');
+    //     $result = $shipService->getProcessShipmentReply($processShipmentRequest);
+
+       
+    //     $error = '';
+    //     $labelUrl = '';
+    //     $trackingId = '';
+    //     echo '<pre>';
+    //     print_r($result);
+    //     die;
+    //     if($result->Notifications[0]->Severity == 'ERROR' || $result->Notifications[0]->Severity == 'FAILURE' || $result->Notifications[0]->Code == 3017 || $result->Notifications[0]->Code == 3021 || $result->Notifications[0]->Code == 6541|| $result->Notifications[0]->Code == 1000 || $result->Notifications[0]->Code == 8336){
+    //         // $error = $result->Notifications[0]->Message;
+    //         $error = 'FedEx Service Api encounter some error';
+           
+    //     }else{
+
+    //         $fileName = rand(10,1000).'_'.time().'_label.pdf';
+    //         $labelName = public_path().'/label/'.$fileName;
+           
+    //         file_put_contents($labelName, $result->CompletedShipmentDetail->CompletedPackageDetails[0]->Label->Parts[0]->Image);
+            
+    //         $labelUrl = 'http://ec2-3-87-57-22.compute-1.amazonaws.com/Fedex/public/label/'.$fileName;
+    //         $trackingId = $result->CompletedShipmentDetail->MasterTrackingId->TrackingNumber;
+    //     }
+    //     // var_dump($result);
+    //     // Save .pdf label
+    //    // echo $result->CompletedShipmentDetail->CompletedPackageDetails[0]->Label->Parts[0]->Image;
+        
+    //    return response()->json(['data'=>['label'=>$labelUrl,'TrackingNumber'=>$trackingId],'error'=>$error]);
     }
 }
