@@ -12,6 +12,8 @@ require_once 'credentials.php';
 class FedexController extends Controller
 {
     
+    
+
     public function getShippingrate(Request $request,FedExRequest $fedexrequest)
     {
 
@@ -117,7 +119,8 @@ class FedexController extends Controller
         $rateReply = $rateServiceRequest->getGetRatesReply($rateRequest); // send true as the 2nd argument to return the SoapClient's stdClass response.
 
    
-      
+        // echo '<pre>';
+        // print_r($rateReply);die;
         // if (!empty($rateReply->RateReplyDetails)) {
         //     foreach ($rateReply->RateReplyDetails as $rateReplyDetail) {
         //         var_dump($rateReplyDetail->ServiceType);
@@ -163,7 +166,8 @@ class FedexController extends Controller
             foreach ($rateReply->RateReplyDetails as $rateReplyDetail) {
                 //var_dump($rateReplyDetail->ServiceType);
 
-
+                $deliveryTime =  $rateReplyDetail->DeliveryTimestamp;
+                $deliveryDay =  $rateReplyDetail->DeliveryDayOfWeek;
                 if($sameCountry === true){
                     //FEDEX_GROUND
                    
@@ -174,7 +178,7 @@ class FedexController extends Controller
                             foreach ($rateReplyDetail->RatedShipmentDetails as $ratedShipmentDetail) {
                                
                                 if($ratedShipmentDetail->ShipmentRateDetail->RateType === 'PAYOR_ACCOUNT_PACKAGE'){
-                                        $FEDEX_GROUND_DELIVERY_RATE[] = ['service_type'=>$rateReplyDetail->ServiceType, 'rate_type'=> $ratedShipmentDetail->ShipmentRateDetail->RateType,'rate'=>$ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount];
+                                        $FEDEX_GROUND_DELIVERY_RATE[] = ['service_type'=>$rateReplyDetail->ServiceType, 'rate_type'=> $ratedShipmentDetail->ShipmentRateDetail->RateType,'rate'=>$ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount,'delivery_time'=>$deliveryTime,'delivery_day'=>$deliveryDay];
                                 }
                                 // var_dump($ratedShipmentDetail->ShipmentRateDetail->RateType . ": " . $ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount);
                             }
@@ -188,7 +192,7 @@ class FedexController extends Controller
                                
                                
                                 if($ratedShipmentDetail->ShipmentRateDetail->RateType === 'PAYOR_ACCOUNT_SHIPMENT'){
-                                    $FEDEX_GROUND_DELIVERY_RATE[] = ['service_type'=>$rateReplyDetail->ServiceType, 'rate_type'=> $ratedShipmentDetail->ShipmentRateDetail->RateType,'rate'=>$ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount];
+                                    $FEDEX_GROUND_DELIVERY_RATE[] = ['service_type'=>$rateReplyDetail->ServiceType, 'rate_type'=> $ratedShipmentDetail->ShipmentRateDetail->RateType,'rate'=>$ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount,'delivery_time'=>$deliveryTime,'delivery_day'=>$deliveryDay];
                                 }
                                
                                // var_dump($ratedShipmentDetail->ShipmentRateDetail->RateType . ": " . $ratedShipmentDetail->ShipmentRateDetail->TotalNetCharge->Amount);

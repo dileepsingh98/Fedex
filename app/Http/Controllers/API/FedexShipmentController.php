@@ -124,6 +124,7 @@ class FedexShipmentController extends Controller
                 $requestedShipment->setShipTimestamp(date('c'));
                 $requestedShipment->setDropoffType(new SimpleType\DropoffType(SimpleType\DropoffType::_REGULAR_PICKUP));
                 $requestedShipment->setServiceType(new SimpleType\ServiceType($ServiceType));
+                // $requestedShipment->setServiceType(new SimpleType\ServiceType(SimpleType\ServiceType::_FEDEX_GROUND));
                 $requestedShipment->setPackagingType(new SimpleType\PackagingType(SimpleType\PackagingType::_YOUR_PACKAGING));
                 $requestedShipment->setShipper($shipper);
                 $requestedShipment->setRecipient($recipient);
@@ -131,7 +132,7 @@ class FedexShipmentController extends Controller
                 $requestedShipment->setRateRequestTypes(array(new SimpleType\RateRequestType(SimpleType\RateRequestType::_PREFERRED)));
                 //$requestedShipment->setPackageCount(1);
                
-                $requestedShipment->setPackageCount($totalPackages);
+                $requestedShipment->setPackageCount(1);
                
                 $requestedShipment->setRequestedPackageLineItems([
                     $packageLineItem1
@@ -151,13 +152,12 @@ class FedexShipmentController extends Controller
                 $error = '';
                 $labelUrl = '';
                 $trackingId = '';
-              
-
-                
+                // echo '<pre>';  
+                // print_r($result);die;
                 if($result->Notifications[0]->Code != 0000){
                     //if($result->Notifications[0]->Severity == 'ERROR' || $result->Notifications[0]->Severity == 'FAILURE' || $result->Notifications[0]->Code == 3017 || $result->Notifications[0]->Code == 3021 || $result->Notifications[0]->Code == 6541|| $result->Notifications[0]->Code == 1000 || $result->Notifications[0]->Code == 8336){
-                    // $error = $result->Notifications[0]->Message;
-                    $error = 'FedEx Service Api encounter some error';
+                    $error = $result->Notifications[0]->Message;
+                    // $error = 'FedEx Service Api encounter some error';
 
                 }else{
 

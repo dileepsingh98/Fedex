@@ -21,3 +21,4 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::post('get-shipping-rate','API\FedexController@getShippingrate');
 Route::post('generate-shipment','API\FedexShipmentController@generateShipment');
 Route::post('validate-address','API\FedexaddressController@validateAddress');
+Route::get('track-order/{id}','API\FedexTrackingController@getTrackingDetail');
