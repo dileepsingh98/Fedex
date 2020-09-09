@@ -23,7 +23,8 @@ class FedexShipmentController extends Controller
         $recipientContactDetail =  $request->input('recipientContact');
         $ServiceType = $request->input('ServiceType');
         $totalPackages = count($products_detail);
-
+        
+        
         
         $userCredential = new ComplexType\WebAuthenticationCredential();
         $userCredential
@@ -93,6 +94,13 @@ class FedexShipmentController extends Controller
 
         $shippingDetailList = [];
         $error = '';
+
+       
+
+
+       
+        
+     
         if(!empty($products_detail)){
             foreach($products_detail as $key => $val){
             $packageLineItem1 = new ComplexType\RequestedPackageLineItem();
@@ -130,6 +138,56 @@ class FedexShipmentController extends Controller
                 $requestedShipment->setRecipient($recipient);
                 $requestedShipment->setLabelSpecification($labelSpecification);
                 $requestedShipment->setRateRequestTypes(array(new SimpleType\RateRequestType(SimpleType\RateRequestType::_PREFERRED)));
+                
+                if($shipper_address['country_code'] !== $recipient_address['country_code']){
+
+
+                    $CustomsClearanceDetail = [
+                        'DutiesPayment' => new ComplexType\Payment([
+                          'PaymentType' => 'RECIPIENT', // valid values RECIPIENT, SENDER and THIRD_PARTY
+                      //    'Payor' => new ComplexType\Payor([
+                      //      'ResponsibleParty' => new ComplexType\Party([
+                      //        'AccountNumber' => FEDEX_ACCOUNT_NUMBER, // OPTIONAL  
+                      //        'Contact' => new ComplexType\Contact([]),
+                      //        'Address' => new ComplexType\Address([])
+                      //      ])  
+                      //    ])
+                        ]),
+                        'DocumentContent' => 'NON_DOCUMENTS',
+                        'CustomsValue' => new ComplexType\Money([
+                          'Currency' => 'USD',
+                          'Amount' => $val['price']
+                        ]),
+                        'Commodities' => [
+                          [
+                            'NumberOfPieces' => 1,
+                            'Description' => $val['description'],
+                            'CountryOfManufacture' => $shipper_address['country_code'] ,
+                            'Weight' => array(
+                              'Units' => 'LB',
+                              'Value' => 1
+                            ),
+                            'Quantity' =>$val['quantity'],
+                            'QuantityUnits' => 'EA',
+                            'UnitPrice' => array(
+                              'Currency' => 'USD',
+                              'Amount' => $val['price']
+                            ),
+                            'CustomsValue' => array(
+                              'Currency' => 'USD',
+                              'Amount' => $val['price'] * $val['quantity']
+                            )
+                          ]
+                        ],
+                        'ExportDetail' => new ComplexType\ExportDetail([
+                          'B13AFilingOption' => 'NOT_REQUIRED'
+                        ])
+                      ];
+
+                    $customClearance = new ComplexType\CustomsClearanceDetail($CustomsClearanceDetail);
+                    $requestedShipment->setCustomsClearanceDetail($customClearance);
+                }
+                
                 //$requestedShipment->setPackageCount(1);
                
                 $requestedShipment->setPackageCount(1);
@@ -144,16 +202,18 @@ class FedexShipmentController extends Controller
                 $processShipmentRequest->setClientDetail($clientDetail);
                 $processShipmentRequest->setVersion($version);
                 $processShipmentRequest->setRequestedShipment($requestedShipment);
-        
+              
                 $shipService = new ShipService\Request();
                 //$shipService->getSoapClient()->__setLocation('https://ws.fedex.com:443/web-services/ship');
+               
                 $result = $shipService->getProcessShipmentReply($processShipmentRequest);
-
+                
+                // echo '<pre>';
+                // print_r($result);die;
                 $error = '';
                 $labelUrl = '';
                 $trackingId = '';
-                // echo '<pre>';  
-                // print_r($result);die;
+                
                 if($result->Notifications[0]->Code != 0000){
                     //if($result->Notifications[0]->Severity == 'ERROR' || $result->Notifications[0]->Severity == 'FAILURE' || $result->Notifications[0]->Code == 3017 || $result->Notifications[0]->Code == 3021 || $result->Notifications[0]->Code == 6541|| $result->Notifications[0]->Code == 1000 || $result->Notifications[0]->Code == 8336){
                     $error = $result->Notifications[0]->Message;
